@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useSWR from "swr";
 import { cities, defaultCity, type City } from "@/lib/cities";
 import { fetchWeather, type WeatherData } from "@/lib/weather";
@@ -15,8 +15,27 @@ import { LastUpdated } from "@/components/last-updated";
 import { LoadingSkeleton } from "@/components/loading-skeleton";
 import { ErrorState } from "@/components/error-state";
 
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function nearestCity(lat: number, lng: number): City {
+  let best = cities[0]!;
+  let bestDist = Infinity;
+  for (const c of cities) {
+    const d = haversine(lat, lng, c.lat, c.lng);
+    if (d < bestDist) { bestDist = d; best = c; }
+  }
+  return best;
+}
+
 export default function Home() {
   const [city, setCity] = useState<City>(defaultCity);
+  const [geoOffered, setGeoOffered] = useState(false);
 
   const { data, error, isLoading, mutate } = useSWR<WeatherData>(
     ["weather", city.id],
@@ -29,6 +48,20 @@ export default function Home() {
   );
 
   const handleRetry = useCallback(() => mutate(), [mutate]);
+
+  // Offer to detect nearest city via geolocation (one-time prompt).
+  useEffect(() => {
+    if (geoOffered || !("geolocation" in navigator)) return;
+    setGeoOffered(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const nearest = nearestCity(pos.coords.latitude, pos.coords.longitude);
+        if (nearest.id !== city.id) setCity(nearest);
+      },
+      () => { /* user denied — keep default */ },
+      { timeout: 5000, maximumAge: 600_000 },
+    );
+  }, [geoOffered, city.id]);
 
   return (
     <main className="min-h-screen max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">

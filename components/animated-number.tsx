@@ -22,6 +22,14 @@ export function AnimatedNumber({
     const from = prevRef.current;
     const to = value;
     if (from === to) return;
+
+    // Respect prefers-reduced-motion: skip animation, set immediately.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      prevRef.current = to;
+      setShown(to);
+      return;
+    }
+
     startRef.current = null;
     cancelAnimationFrame(rafRef.current);
 
