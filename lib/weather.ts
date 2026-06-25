@@ -8,6 +8,8 @@ export type CurrentWeather = {
   precipitation: number;
   weatherCode: number;
   windSpeed: number;
+  windDirection: number;
+  windGusts: number;
 };
 
 export type HourlyForecast = {
@@ -48,6 +50,8 @@ export async function fetchWeather(city: City): Promise<WeatherData> {
       "precipitation",
       "weather_code",
       "wind_speed_10m",
+      "wind_direction_10m",
+      "wind_gusts_10m",
     ].join(","),
     hourly: ["temperature_2m", "precipitation_probability", "precipitation"].join(","),
     daily: [
@@ -80,6 +84,8 @@ export async function fetchWeather(city: City): Promise<WeatherData> {
       precipitation: raw.current.precipitation,
       weatherCode: raw.current.weather_code,
       windSpeed: raw.current.wind_speed_10m,
+      windDirection: raw.current.wind_direction_10m,
+      windGusts: raw.current.wind_gusts_10m,
     },
     hourly: {
       time: raw.hourly.time as string[],
