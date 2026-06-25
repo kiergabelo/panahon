@@ -87,6 +87,13 @@ export function TempChart({ data }: { data: WeatherData }) {
             </text>
           );
         })}
+        {/* "Now" vertical line */}
+        <line
+          x1={padL} x2={padL}
+          y1={padT} y2={padT + chartH}
+          stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.5"
+        />
+        <text x={padL + 4} y={padT + 12} fill="var(--accent)" fontSize="9" textAnchor="start" opacity="0.7">NOW</text>
       </svg>
     </div>
   );

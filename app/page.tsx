@@ -32,6 +32,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <a href="#content" className="skip-link">Skip to content</a>
+      <div id="content" />
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 100 100" className="flex-shrink-0">

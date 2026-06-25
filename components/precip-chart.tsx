@@ -106,6 +106,11 @@ export function PrecipChart({ data }: { data: WeatherData }) {
               </text>
             );
           })}
+          <line
+            x1={padL} x2={padL}
+            y1={padT} y2={padT + chartH}
+            stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.5"
+          />
         </svg>
         <canvas
           ref={canvasRef}
