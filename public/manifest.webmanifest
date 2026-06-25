@@ -1,0 +1,12 @@
+{
+  "name": "Panahon — PH Weather",
+  "short_name": "Panahon",
+  "description": "Real-time Philippine weather dashboard powered by Open-Meteo.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06070a",
+  "theme_color": "#06070a",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
