@@ -3,7 +3,7 @@
 Real-time Philippine weather dashboard with hand-rolled SVG charts. No chart
 library, no API key.
 
-**Live:** deploy with `npx vercel --prod` (free tier, zero config).
+**Live:** `panahon.kierabelo.com` — deployed on Cloudflare Pages (static export).
 
 ## Why this exists
 
