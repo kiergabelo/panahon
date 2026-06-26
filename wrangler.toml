@@ -1,4 +1,0 @@
-﻿[pages]
-framework = "none"
-build.command = "npm run build"
-build.output = "out"
