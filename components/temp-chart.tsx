@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import type { WeatherData } from "@/lib/weather";
-import { buildAreaPath, scale, formatTemp, formatTime, tempColor } from "@/lib/utils";
+import { buildAreaPath, scale, formatTemp, formatTime } from "@/lib/utils";
 
 export function TempChart({ data }: { data: WeatherData }) {
+  const [hover, setHover] = useState<number | null>(null);
   const now = new Date();
   const hourly = data.hourly;
 
@@ -13,6 +17,7 @@ export function TempChart({ data }: { data: WeatherData }) {
   const hours = 24;
   const temps = hourly.temperature.slice(idx, idx + hours);
   const times = hourly.time.slice(idx, idx + hours);
+  const feels = hourly.apparentTemperature.slice(idx, idx + hours);
 
   if (!temps.length) return null;
 
@@ -31,6 +36,7 @@ export function TempChart({ data }: { data: WeatherData }) {
     x: padL + (i / (temps.length - 1)) * chartW,
     y: padT + scale(t, minT, maxT, chartH, 0),
     val: t,
+    feels: feels[i] ?? null,
     time: times[i]!,
   }));
 
@@ -39,6 +45,15 @@ export function TempChart({ data }: { data: WeatherData }) {
   const maxPoint = points.reduce((a, b) => (b.val > a.val ? b : a));
 
   const labelIdxs = [0, 6, 12, 18, 23].filter((i) => i < points.length);
+
+  const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
+    const svg = e.currentTarget.ownerSVGElement;
+    if (!svg || points.length < 2) return;
+    const r = svg.getBoundingClientRect();
+    const vbX = ((e.clientX - r.left) / r.width) * W;
+    const raw = Math.round(((vbX - padL) / chartW) * (points.length - 1));
+    setHover(Math.max(0, Math.min(points.length - 1, raw)));
+  };
 
   return (
     <div className="card p-6 animate-fade-in">
@@ -94,6 +109,45 @@ export function TempChart({ data }: { data: WeatherData }) {
           stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.5"
         />
         <text x={padL + 4} y={padT + 12} fill="var(--accent)" fontSize="9" textAnchor="start" opacity="0.7">NOW</text>
+
+        <rect
+          x={padL}
+          y={0}
+          width={chartW}
+          height={H}
+          fill="transparent"
+          style={{ cursor: "crosshair", pointerEvents: "all" }}
+          onMouseMove={handleMove}
+          onMouseLeave={() => setHover(null)}
+        />
+        {hover !== null && (() => {
+          const p = points[hover]!;
+          const flip = p.x > W - 110;
+          const boxW = 102;
+          const boxH = 48;
+          const offset = flip ? -boxW - 10 : 10;
+          const by = Math.max(padT, Math.min(p.y - boxH / 2, H - padB - boxH));
+          return (
+            <g className="chart-tooltip" pointerEvents="none" transform={`translate(${p.x} 0)`}>
+              <line x1={0} x2={0} y1={padT} y2={padT + chartH} stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.7" />
+              <circle cx={0} cy={p.y} r="4.5" fill="var(--warm)" stroke="var(--card)" strokeWidth="2" />
+              <g transform={`translate(${offset} ${by})`}>
+                <rect width={boxW} height={boxH} rx="6" fill="var(--panel)" stroke="var(--line)" />
+                <text x={10} y={19} fill="var(--faint)" fontSize="10" className="tabular">
+                  {formatTime(p.time, { hourOnly: true })}
+                </text>
+                <text x={10} y={38} fill="var(--warm)" fontSize="15" fontWeight="600" className="tabular">
+                  {p.val.toFixed(1)}°
+                </text>
+                {p.feels !== null && (
+                  <text x={boxW - 10} y={38} fill="var(--muted)" fontSize="10" textAnchor="end" className="tabular">
+                    feels {p.feels.toFixed(1)}°
+                  </text>
+                )}
+              </g>
+            </g>
+          );
+        })()}
       </svg>
     </div>
   );

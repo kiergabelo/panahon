@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { cities, defaultCity, type City } from "@/lib/cities";
 import { fetchWeather, type WeatherData } from "@/lib/weather";
@@ -36,6 +36,23 @@ function nearestCity(lat: number, lng: number): City {
 export default function Home() {
   const [city, setCity] = useState<City>(defaultCity);
   const [geoOffered, setGeoOffered] = useState(false);
+  const [phase, setPhase] = useState<"in" | "out">("in");
+  const [renderedCityId, setRenderedCityId] = useState(defaultCity.id);
+  const switchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const switchCity = useCallback((next: City) => {
+    setCity((prev) => {
+      if (next.id === prev.id) return prev;
+      setPhase("out");
+      if (switchTimer.current) clearTimeout(switchTimer.current);
+      switchTimer.current = setTimeout(() => {
+        setRenderedCityId(next.id);
+        setPhase("in");
+        switchTimer.current = null;
+      }, 300);
+      return next;
+    });
+  }, []);
 
   const { data, error, isLoading, mutate } = useSWR<WeatherData>(
     ["weather", city.id],
@@ -44,10 +61,17 @@ export default function Home() {
       refreshInterval: 600_000,
       revalidateOnFocus: false,
       shouldRetryOnError: false,
+      keepPreviousData: true,
     },
   );
 
   const handleRetry = useCallback(() => mutate(), [mutate]);
+
+  useEffect(() => {
+    return () => {
+      if (switchTimer.current) clearTimeout(switchTimer.current);
+    };
+  }, []);
 
   // Offer to detect nearest city via geolocation (one-time prompt).
   useEffect(() => {
@@ -56,12 +80,12 @@ export default function Home() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const nearest = nearestCity(pos.coords.latitude, pos.coords.longitude);
-        if (nearest.id !== city.id) setCity(nearest);
+        if (nearest.id !== city.id) switchCity(nearest);
       },
       () => { /* user denied — keep default */ },
       { timeout: 5000, maximumAge: 600_000 },
     );
-  }, [geoOffered, city.id]);
+  }, [geoOffered, city.id, switchCity]);
 
   return (
     <main className="min-h-screen max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -96,7 +120,7 @@ export default function Home() {
             value={city.id}
             onChange={(e) => {
               const found = cities.find((c) => c.id === e.target.value);
-              if (found) setCity(found);
+              if (found) switchCity(found);
             }}
             className="bg-panel border border-line rounded-lg px-4 py-2 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring transition-all"
             aria-label="Select city"
@@ -123,7 +147,10 @@ export default function Home() {
       )}
 
       {data && !error && (
-        <div className="flex flex-col gap-4">
+        <div
+          key={renderedCityId}
+          className={`flex flex-col gap-4 ${phase === "out" ? "city-out" : "city-in"}`}
+        >
           <CurrentConditions data={data} />
           <HourlyForecast data={data} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

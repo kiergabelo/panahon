@@ -2,11 +2,12 @@ import { WeatherIcon } from "./weather-icon";
 import { WindCompass } from "./wind-compass";
 import { AnimatedNumber } from "./animated-number";
 import { describeWeather, weatherCodeMap, type WeatherData } from "@/lib/weather";
-import { formatTemp, formatMs } from "@/lib/utils";
+import { formatMs, windDir } from "@/lib/utils";
 
 export function CurrentConditions({ data }: { data: WeatherData }) {
   const c = data.current;
   const iconName = weatherCodeMap[c.weatherCode]?.icon ?? "cloud";
+  const windTip = `Wind from ${windDir(c.windDirection)} (${Math.round(c.windDirection)}°) · Gusts ${formatMs(c.windGusts)}`;
 
   return (
     <div className="card p-6 sm:p-8 flex flex-col gap-6 animate-fade-in">
@@ -26,16 +27,19 @@ export function CurrentConditions({ data }: { data: WeatherData }) {
         <Stat
           label="Feels like"
           value={<AnimatedNumber value={c.apparentTemperature} format={(n) => `${Math.round(n)}°`} />}
+          tooltip="Apparent temperature accounts for wind chill and heat index"
         />
         <Stat
           label="Humidity"
           value={<AnimatedNumber value={c.humidity} format={(n) => `${Math.round(n)}%`} />}
+          tooltip="Relative humidity at 2m above ground"
         />
         <Stat
           label="Precip."
           value={<AnimatedNumber value={c.precipitation} format={(n) => `${n.toFixed(1)} mm`} />}
+          tooltip="Precipitation accumulated in the past hour"
         />
-        <div className="flex flex-col items-start gap-2">
+        <div className="relative group">
           <span className="text-xs text-faint uppercase tracking-wide">Wind</span>
           <div className="flex items-center gap-3">
             <WindCompass directionDeg={c.windDirection} size={48} />
@@ -48,17 +52,25 @@ export function CurrentConditions({ data }: { data: WeatherData }) {
               </span>
             </div>
           </div>
+          <div className="tip-pop absolute bottom-full left-1/2 mb-2 w-max max-w-[14rem] text-center">
+            {windTip}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function Stat({ label, value, tooltip }: { label: string; value: React.ReactNode; tooltip?: string }) {
   return (
-    <div className="flex flex-col">
+    <div className="relative group">
       <span className="text-xs text-faint uppercase tracking-wide">{label}</span>
       <span className="text-lg font-medium tabular">{value}</span>
+      {tooltip && (
+        <div className="tip-pop absolute bottom-full left-1/2 mb-2 w-max max-w-[12rem] text-center">
+          {tooltip}
+        </div>
+      )}
     </div>
   );
 }

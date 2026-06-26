@@ -19,6 +19,7 @@ export type CurrentWeather = {
 export type HourlyForecast = {
   time: string[];
   temperature: number[];
+  apparentTemperature: number[];
   precipitationProb: number[];
   precipitation: number[];
 };
@@ -61,7 +62,7 @@ export async function fetchWeather(city: City): Promise<WeatherData> {
       "uv_index",
       "is_day",
     ].join(","),
-    hourly: ["temperature_2m", "precipitation_probability", "precipitation"].join(","),
+    hourly: ["temperature_2m", "apparent_temperature", "precipitation_probability", "precipitation"].join(","),
     daily: [
       "weather_code",
       "temperature_2m_max",
@@ -102,6 +103,7 @@ export async function fetchWeather(city: City): Promise<WeatherData> {
     hourly: {
       time: raw.hourly.time as string[],
       temperature: raw.hourly.temperature_2m as number[],
+      apparentTemperature: raw.hourly.apparent_temperature as number[],
       precipitationProb: raw.hourly.precipitation_probability as number[],
       precipitation: raw.hourly.precipitation as number[],
     },

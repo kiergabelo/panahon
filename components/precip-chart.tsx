@@ -1,9 +1,12 @@
-import { useEffect, useRef } from "react";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import type { WeatherData } from "@/lib/weather";
 import { scale, formatTime } from "@/lib/utils";
 
 export function PrecipChart({ data }: { data: WeatherData }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hover, setHover] = useState<number | null>(null);
 
   const now = new Date();
   const hourly = data.hourly;
@@ -71,8 +74,18 @@ export function PrecipChart({ data }: { data: WeatherData }) {
   const padL = 20, padR = 20, padT = 20, padB = 25;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
-  const barW = (chartW / probs.length) - 2;
+  const slot = chartW / probs.length;
+  const barW = slot - 2;
   const labelIdxs = [0, 6, 12, 18, 23].filter((i) => i < probs.length);
+
+  const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
+    const svg = e.currentTarget.ownerSVGElement;
+    if (!svg || probs.length === 0) return;
+    const r = svg.getBoundingClientRect();
+    const vbX = ((e.clientX - r.left) / r.width) * W;
+    const raw = Math.floor((vbX - padL) / slot);
+    setHover(Math.max(0, Math.min(probs.length - 1, raw)));
+  };
 
   return (
     <div className="card p-6 animate-fade-in relative overflow-hidden">
@@ -89,7 +102,7 @@ export function PrecipChart({ data }: { data: WeatherData }) {
             stroke="var(--line)" strokeWidth="1" />
           {probs.map((prob, i) => {
             const barH = scale(prob, 0, 100, 0, chartH);
-            const x = padL + (i / probs.length) * chartW;
+            const x = padL + i * slot;
             const y = padT + (chartH - barH);
             const isRaining = amounts[i]! > 0;
             return (
@@ -99,7 +112,7 @@ export function PrecipChart({ data }: { data: WeatherData }) {
             );
           })}
           {labelIdxs.map((i) => {
-            const x = padL + (i / probs.length) * chartW + barW / 2;
+            const x = padL + i * slot + barW / 2;
             return (
               <text key={i} x={x} y={H - 5} fill="var(--faint)" fontSize="11" textAnchor="middle">
                 {i < times.length ? formatTime(times[i]!, { hourOnly: true }) : ""}
@@ -111,6 +124,47 @@ export function PrecipChart({ data }: { data: WeatherData }) {
             y1={padT} y2={padT + chartH}
             stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.5"
           />
+
+          <rect
+            x={padL}
+            y={0}
+            width={chartW}
+            height={H}
+            fill="transparent"
+            style={{ cursor: "crosshair", pointerEvents: "all" }}
+            onMouseMove={handleMove}
+            onMouseLeave={() => setHover(null)}
+          />
+          {hover !== null && (() => {
+            const prob = probs[hover]!;
+            const mm = amounts[hover]!;
+            const time = times[hover]!;
+            const cx = padL + hover * slot + barW / 2;
+            const flip = cx > W - 110;
+            const boxW = 116;
+            const boxH = mm > 0 ? 54 : 38;
+            const offset = flip ? -boxW - 8 : 8;
+            const by = padT + 4;
+            return (
+              <g className="chart-tooltip" pointerEvents="none" transform={`translate(${cx} 0)`}>
+                <line x1={0} x2={0} y1={padT} y2={padT + chartH} stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" opacity="0.7" />
+                <g transform={`translate(${offset} ${by})`}>
+                  <rect width={boxW} height={boxH} rx="6" fill="var(--panel)" stroke="var(--line)" />
+                  <text x={10} y={18} fill="var(--faint)" fontSize="10" className="tabular">
+                    {formatTime(time, { hourOnly: true })}
+                  </text>
+                  <text x={10} y={34} fill="var(--rain)" fontSize="15" fontWeight="600" className="tabular">
+                    {prob}% rain
+                  </text>
+                  {mm > 0 && (
+                    <text x={10} y={48} fill="var(--muted)" fontSize="10" className="tabular">
+                      {mm.toFixed(1)} mm
+                    </text>
+                  )}
+                </g>
+              </g>
+            );
+          })()}
         </svg>
         <canvas
           ref={canvasRef}

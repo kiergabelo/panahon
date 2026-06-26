@@ -88,6 +88,54 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* City switch: fade-out downward, then fade-in upward */
+.city-out {
+  animation: city-out 0.3s ease-in forwards;
+}
+.city-in {
+  animation: city-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes city-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(8px); }
+}
+@keyframes city-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth SVG tooltip glide on hover */
+.chart-tooltip {
+  transition: transform 0.15s ease-out;
+}
+
+/* CSS-driven hover tooltip (conditions, cards) */
+.tip-pop {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+  z-index: 30;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.group:hover > .tip-pop,
+.group:focus-within > .tip-pop {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-out, .city-in, .data-enter { animation: none; }
+  .chart-tooltip { transition: none; }
+  .tip-pop { transition: opacity 0.1s ease-out; transform: translate(-50%, 0); }
+}
+
 @layer utilities {
   .tabular {
     font-variant-numeric: tabular-nums;
